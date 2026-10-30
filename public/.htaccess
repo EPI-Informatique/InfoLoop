@@ -1,0 +1,17 @@
+# Apache fallback (nginx config is recommended, see docs/nginx.conf).
+RewriteEngine On
+RewriteCond %{REQUEST_URI} !^/files/
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php [QSA,L]
+
+# Never serve dotfiles or the files index
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+Options -Indexes
+
+# Security headers (nginx adds these too)
+Header always set X-Content-Type-Options "nosniff"
+Header always set X-Frame-Options "SAMEORIGIN"
+Header always set Referrer-Policy "strict-origin-when-cross-origin"

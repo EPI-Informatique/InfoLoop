@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+          extensions: mbstring, intl, dom, fileinfo, gd, sodium, openssl, pdo_mysql
+
+      - name: Lint all PHP files
+        run: |
+          fail=0
+          for f in $(find app public bin tests -name '*.php' -o -name 'infoloop' | sort); do
+            php -l "$f" >/dev/null || { echo "LINT FAIL: $f"; php -l "$f"; fail=1; }
+          done
+          exit $fail
+
+      - name: Run unit tests
+        run: php tests/run.php

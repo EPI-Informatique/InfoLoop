@@ -1,0 +1,199 @@
+#!/usr/bin/env php
+<?php
+
+/**
+ * InfoLoop CLI.
+ *
+ * Usage:
+ *   php bin/infoloop migrate                     Apply pending DB migrations
+ *   php bin/infoloop seed                        Apply seed data (roles/settings)
+ *   php bin/infoloop install                     migrate + seed
+ *   php bin/infoloop user:create <user> <email> <password> [role] [location_id]
+ *   php bin/infoloop user:reset-password <user>  Interactive password reset
+ *   php bin/infoloop user:list
+ *   php bin/infoloop ldap:sync                   Sync users from LDAP
+ *   php bin/infoloop screen:token <screen_id>   Print the screen URL token
+ *   php bin/infoloop log:tail [lines]            Tail the app log
+ */
+
+declare(strict_types=1);
+
+if (PHP_SAPI !== 'cli') {
+    fwrite(STDERR, "This script must be run from the CLI.\n");
+    exit(1);
+}
+
+$config = require dirname(__DIR__) . '/app/bootstrap.php';
+
+use InfoLoop\Core\App;
+use InfoLoop\Core\Database;
+use InfoLoop\Core\Migrator;
+use InfoLoop\Services\AuthService;
+use InfoLoop\Services\LdapService;
+
+$app = new App($config);
+$command = $argv[1] ?? 'help';
+$args = array_slice($argv, 2);
+
+/**
+ * Writes a line to STDOUT with a timestamp (logging instead of print).
+ */
+function out(string $message, string $level = 'info'): void
+{
+    fwrite(STDOUT, sprintf("[%s] [%s] %s\n", date('Y-m-d H:i:s'), $level, $message));
+}
+
+/**
+ * Prompts for a hidden password.
+ */
+function readPassword(string $prompt): string
+{
+    fwrite(STDOUT, $prompt);
+    system('stty -echo');
+    $password = (string) fgets(STDIN);
+    system('stty echo');
+    fwrite(STDOUT, "\n");
+    return trim($password);
+}
+
+try {
+    switch ($command) {
+        case 'migrate':
+            $ran = (new Migrator($app))->migrate();
+            out($ran === [] ? 'Nothing to migrate.' : 'Applied: ' . implode(', ', $ran));
+            break;
+
+        case 'seed':
+            $sql = (string) file_get_contents(dirname(__DIR__) . '/app/database/seed.sql');
+            foreach (preg_split('/;\s*(\r?\n|$)/', $sql) ?: [] as $statement) {
+                $statement = trim($statement);
+                if ($statement !== '' && !str_starts_with($statement, '--')) {
+                    $app->db()->exec($statement);
+                }
+            }
+            out('Seed data applied.');
+            break;
+
+        case 'install':
+            $ran = (new Migrator($app))->migrate();
+            out('Migrations applied: ' . ($ran === [] ? '(none pending)' : implode(', ', $ran)));
+            $seedSql = (string) file_get_contents(dirname(__DIR__) . '/app/database/seed.sql');
+            foreach (preg_split('/;\s*(\r?\n|$)/', $seedSql) ?: [] as $statement) {
+                $statement = trim($statement);
+                if ($statement !== '' && !str_starts_with($statement, '--')) {
+                    $app->db()->exec($statement);
+                }
+            }
+            out('Seed data applied. Then create an admin: php bin/infoloop user:create admin admin@example.com <password> super_admin');
+            break;
+
+        case 'user:create':
+            [$user, $email, $password] = [$args[0] ?? '', $args[1] ?? '', $args[2] ?? ''];
+            $role = $args[3] ?? 'admin';
+            $locationId = (int) ($args[4] ?? 0);
+            if ($user === '' || $email === '' || $password === '') {
+                throw new InvalidArgumentException('Usage: user:create <username> <email> <password> [role] [location_id]');
+            }
+            if (mb_strlen($password) < 12) {
+                throw new InvalidArgumentException('Password must be at least 12 characters.');
+            }
+            $db = new Database($app->db());
+            $roleId = (int) ($db->scalar('SELECT id FROM roles WHERE name = :r', ['r' => $role]) ?? 0);
+            if ($roleId === 0) {
+                throw new InvalidArgumentException("Unknown role '{$role}'.");
+            }
+            $db->insert('users', [
+                'username' => $user,
+                'email' => $email,
+                'display_name' => $user,
+                'password_hash' => $app->service(AuthService::class)->hashPassword($password),
+                'role_id' => $roleId,
+                'location_id' => $locationId > 0 ? $locationId : null,
+                'source' => 'local',
+                'is_active' => 1,
+            ]);
+            out("User '{$user}' created with role '{$role}'.");
+            break;
+
+        case 'user:reset-password':
+            $user = $args[0] ?? '';
+            if ($user === '') {
+                throw new InvalidArgumentException('Usage: user:reset-password <username>');
+            }
+            $db = new Database($app->db());
+            $row = $db->one('SELECT id FROM users WHERE username = :u', ['u' => $user]);
+            if (!is_array($row)) {
+                throw new InvalidArgumentException("User '{$user}' not found.");
+            }
+            $password = readPassword("New password for {$user} (min 12 chars): ");
+            if (mb_strlen($password) < 12) {
+                throw new InvalidArgumentException('Password must be at least 12 characters.');
+            }
+            $confirm = readPassword('Confirm new password: ');
+            if ($password !== $confirm) {
+                throw new InvalidArgumentException('Passwords do not match.');
+            }
+            $db->update('users', [
+                'password_hash' => $app->service(AuthService::class)->hashPassword($password),
+                'failed_attempts' => 0,
+                'locked_until' => null,
+            ], 'id = :id', ['id' => (int) $row['id']]);
+            out("Password reset for '{$user}'.");
+            break;
+
+        case 'user:list':
+            $db = new Database($app->db());
+            foreach ($db->all('SELECT u.username, u.email, r.label AS role, u.source, u.is_active, u.mfa_enabled, u.last_login_at FROM users u JOIN roles r ON r.id = u.role_id ORDER BY u.username') as $u) {
+                out(sprintf('%-20s %-30s %-18s %-6s active=%d mfa=%d last=%s', $u['username'], $u['email'], $u['role'], $u['source'], (int) $u['is_active'], (int) $u['mfa_enabled'], $u['last_login_at'] ?? '-'));
+            }
+            break;
+
+        case 'ldap:sync':
+            $result = $app->service(LdapService::class)->syncUsers();
+            out("LDAP sync: {$result['created']} created, {$result['updated']} updated.");
+            break;
+
+        case 'screen:token':
+            $screenId = (int) ($args[0] ?? 0);
+            $db = new Database($app->db());
+            $row = $db->one('SELECT token, name FROM screens WHERE id = :id', ['id' => $screenId]);
+            if (!is_array($row)) {
+                throw new InvalidArgumentException("Screen {$screenId} not found.");
+            }
+            out("Screen '{$row['name']}' URL: /?screen={$row['token']}");
+            break;
+
+        case 'log:tail':
+            $lines = (int) ($args[0] ?? 50);
+            $logFile = (string) $app->config('log.dir') . '/app-' . date('Y-m-d') . '.log';
+            if (!is_file($logFile)) {
+                out("No log file for today ({$logFile}).");
+                break;
+            }
+            $all = file($logFile) ?: [];
+            foreach (array_slice($all, -$lines) as $line) {
+                fwrite(STDOUT, $line);
+            }
+            break;
+
+        case 'help':
+        default:
+            out(<<<'HELP'
+InfoLoop CLI commands:
+  migrate                          Apply pending database migrations
+  seed                             Apply seed data (roles, default location, settings)
+  install                          migrate + seed
+  user:create <user> <email> <pw> [role] [location_id]
+  user:reset-password <user>       Reset an admin password interactively
+  user:list                        List admin users
+  ldap:sync                        Synchronise users from LDAP/AD
+  screen:token <screen_id>         Show the kiosk URL for a screen
+  log:tail [lines]                 Tail today's application log
+HELP
+            );
+            break;
+    }
+} catch (Throwable $e) {
+    fwrite(STDERR, sprintf("[%s] [error] %s\n", date('Y-m-d H:i:s'), $e->getMessage()));
+    exit(1);
+}

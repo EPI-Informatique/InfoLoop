@@ -1,0 +1,20 @@
+# Local configuration / secrets
+.env
+.env.*
+!.env.example
+
+# Runtime data
+storage/
+!storage/.gitkeep
+public/files/
+!public/files/.gitkeep
+
+# Tooling
+vendor/
+composer.lock
+.phpunit.result.cache
+.phpcs-cache
+
+# OS
+.DS_Store
+Thumbs.db

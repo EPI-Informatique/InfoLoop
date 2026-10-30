@@ -1,0 +1,41 @@
+{
+    "name": "epi-informatique/infoloop",
+    "description": "InfoLoop - open-source PHP 8.4+ digital signage platform for offices, HQ and campuses.",
+    "type": "project",
+    "license": "MIT",
+    "require": {
+        "php": ">=8.4",
+        "ext-pdo": "*",
+        "ext-pdo_mysql": "*",
+        "ext-mbstring": "*",
+        "ext-intl": "*",
+        "ext-fileinfo": "*",
+        "ext-dom": "*",
+        "ext-openssl": "*",
+        "ext-sodium": "*"
+    },
+    "suggest": {
+        "ext-ldap": "Required to authenticate admin users against LDAP / Active Directory.",
+        "ext-gd": "Required for image thumbnails and gallery posters."
+    },
+    "autoload": {
+        "psr-4": {
+            "InfoLoop\\": "app/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "InfoLoop\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "lint": "find app public bin tests -name '*.php' -exec php -l {} \\;",
+        "test": "php tests/run.php",
+        "migrate": "php bin/infoloop migrate"
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
