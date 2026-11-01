@@ -70,13 +70,19 @@ final class App
         if ($this->pdo instanceof PDO) {
             return $this->pdo;
         }
-        $db = $this->config('db');
+        $db = $this->config('db', []);
+        if (!is_array($db) || $db === []) {
+            throw new \RuntimeException(
+                'Database configuration is missing: no "db" section was found in the loaded config. ' .
+                'Check that app/config/app.php is readable and returns an array (see app/bootstrap.php).'
+            );
+        }
         $dsn = sprintf(
             'mysql:host=%s;port=%d;dbname=%s;charset=%s',
-            $db['host'],
-            (int) $db['port'],
-            $db['name'],
-            $db['charset']
+            (string) ($db['host'] ?? '127.0.0.1'),
+            (int) ($db['port'] ?? 3306),
+            (string) ($db['name'] ?? 'infoloop'),
+            (string) ($db['charset'] ?? 'utf8mb4')
         );
         $options = [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
