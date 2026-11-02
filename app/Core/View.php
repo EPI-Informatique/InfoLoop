@@ -20,6 +20,9 @@ final class View
     /** @var array<string, mixed> */
     private array $sections = [];
 
+    /** @var array<string, mixed> Last non-empty data set, reused for nested layout renders. */
+    private array $lastData = [];
+
     private string $sectionName = '';
 
     public function __construct(App $app)
@@ -30,12 +33,22 @@ final class View
     /**
      * Renders a template, optionally inside a layout.
      *
+     * Templates that wrap themselves in a layout call
+     * `$this->render('layouts/x', ['content' => …])` from inside the
+     * template; the data passed there must not drop the variables the
+     * controller injected (app, settings, currentUser, flash, csrfToken),
+     * so the last full data set is remembered and used as the base.
+     *
      * @param array<string, mixed> $data
      */
     public function render(string $template, array $data = [], ?string $layout = null): string
     {
         $this->layout = $layout;
         $this->sections = [];
+        if ($data !== []) {
+            $this->lastData = $data;
+        }
+        $data = $this->lastData;
         $content = $this->renderTemplate($template, $data);
         if ($layout !== null) {
             $data['content'] = $content;
