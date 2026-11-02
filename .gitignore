@@ -11,6 +11,7 @@ public/files/
 
 # Tooling
 vendor/
+!/public/assets/vendor/
 composer.lock
 .phpunit.result.cache
 .phpcs-cache
