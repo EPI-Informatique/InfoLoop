@@ -21,7 +21,8 @@ a { color: var(--il-primary); }
 .nav-link { color: #cbd5e1; text-decoration: none; padding: .6rem .9rem; border-radius: .5rem; margin: .15rem 0; }
 .nav-link:hover { background: rgba(255,255,255,.08); color: #fff; }
 .nav-link.active { background: var(--il-primary); color: #fff; }
-.nav-icon { display: inline-block; width: 1.4rem; opacity: .7; font-size: .8rem; }
+.nav-icon { display: inline-flex; flex: 0 0 auto; width: 1em; height: 1em; margin-right: .5em; opacity: .85; vertical-align: -0.125em; }
+.nav-icon svg { width: 1em; height: 1em; fill: currentColor; display: block; }
 .sidebar-footer { margin-top: auto; padding: .5rem; }
 
 .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+  <symbol id="i-grid" viewBox="0 0 24 24"><path fill="currentColor" d="M3 3h8v8H3zM13 3h8v8h-8zM3 13h8v8H3zM13 13h8v8h-8z"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24"><path fill="currentColor" d="M6 2h9l5 5v15H6zm8 1.5V8h4.5zM8 11h8v2H8zm0 4h8v2H8z"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><path fill="currentColor" d="M3 4h18v16H3zm2 2v9l4-5 3 4 3-3 4 5V6zm3.5 1A1.5 1.5 0 1 1 7 8.5 1.5 1.5 0 0 1 8.5 7z"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path fill="currentColor" d="M4 5h2v2H4zm4 0h12v2H8zM4 11h2v2H4zm4 0h12v2H8zM4 17h2v2H4zm4 0h12v2H8z"/></symbol>
+  <symbol id="i-monitor" viewBox="0 0 24 24"><path fill="currentColor" d="M3 4h18v12H3zm2 2v8h14V6zM8 18h8v2H8z"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 14.5 9 2.5 2.5 0 0 1 12 11.5z"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><path fill="currentColor" d="M8 11a3 3 0 1 0-3-3 3 3 0 0 0 3 3zm8 0a3 3 0 1 0-3-3 3 3 0 0 0 3 3zM2 19c0-3 3-5 6-5s6 2 6 5v1H2zm12.5 1H22v-1c0-2.5-2.5-4.2-5.5-4.7a8 8 0 0 1 0 4.7z"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><path fill="currentColor" d="M12 8a4 4 0 1 0 4 4 4 4 0 0 0-4-4zm9.4 5.6l-2-.4a7.6 7.6 0 0 1-.6 1.5l1.2 1.7-1.8 1.8-1.7-1.2a7.6 7.6 0 0 1-1.5.6l-.4 2h-2.6l-.4-2a7.6 7.6 0 0 1-1.5-.6l-1.7 1.2-1.8-1.8 1.2-1.7a7.6 7.6 0 0 1-.6-1.5l-2-.4v-2.6l2-.4a7.6 7.6 0 0 1 .6-1.5L5.8 6.6l1.8-1.8 1.7 1.2a7.6 7.6 0 0 1 1.5-.6l.4-2h2.6l.4 2a7.6 7.6 0 0 1 1.5.6l1.7-1.2 1.8 1.8-1.2 1.7a7.6 7.6 0 0 1 .6 1.5l2 .4z"/></symbol>
+</svg>

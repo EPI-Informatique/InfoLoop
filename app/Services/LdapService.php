@@ -40,7 +40,7 @@ final class LdapService
     public function config(): array
     {
         $fromDb = $this->app->service(SettingsService::class)->get('ldap', []);
-        $fromEnv = $this->app->config('ldap', []);
+        $fromEnv = $this->app->config('ldap', $this->app->config('app.ldap', []));
         $merged = array_merge($fromEnv, is_array($fromDb) ? $fromDb : []);
         return is_array($merged) ? $merged : [];
     }

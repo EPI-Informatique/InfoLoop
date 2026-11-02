@@ -27,6 +27,6 @@ final class Location extends Model
      */
     public function active(): array
     {
-        return $this->db->all('SELECT * FROM locations WHERE is_active = 1 ORDER BY name ASC');
+        return $this->db()->all('SELECT * FROM locations WHERE is_active = 1 ORDER BY name ASC');
     }
 }

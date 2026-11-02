@@ -72,10 +72,28 @@ infoloop_load_dotenv(INFOLOOP_ROOT . '/.env');
 $config = [];
 foreach (glob(INFOLOOP_APP . '/config/*.php') ?: [] as $configFile) {
     $name = basename($configFile, '.php');
-    $loaded = require $configFile;
+    try {
+        $loaded = require $configFile;
+    } catch (\Throwable $e) {
+        error_log(sprintf(
+            '[infoloop-bootstrap] config file %s failed to load: %s (%s:%d)',
+            $configFile, $e->getMessage(), $e->getFile(), $e->getLine()
+        ));
+        continue;
+    }
     if (is_array($loaded)) {
         $config[$name] = $loaded;
+    } else {
+        error_log(sprintf(
+            '[infoloop-bootstrap] config file %s did not return an array (got %s)',
+            $configFile, get_debug_type($loaded)
+        ));
     }
+}
+
+if (!isset($config['app']) || !is_array($config['app'])) {
+    error_log('[infoloop-bootstrap] WARNING: app/config/app.php did not load - falling back to empty app config');
+    $config['app'] = [];
 }
 
 set_exception_handler(static function (Throwable $e): void {

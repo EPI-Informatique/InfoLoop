@@ -97,9 +97,11 @@ ob_start();
             <label class="checkbox"><input type="checkbox" name="clock_seconds" value="1" <?= ($settings['show_seconds'] ?? true) ? 'checked' : '' ?>> Show seconds</label>
         </fieldset>
 
-        <label class="full">Content (HTML) — images can be pasted directly (Ctrl+V)
+        <label class="full">Content — WYSIWYG editor (images can be pasted with Ctrl+V)
             <textarea name="body_html" id="body-editor" rows="14"><?= e($content['body_html'] ?? '') ?></textarea>
         </label>
+        <?php $tinymceVer = is_file(INFOLOOP_PUBLIC . '/assets/vendor/tinymce/VERSION') ? trim((string) file_get_contents(INFOLOOP_PUBLIC . '/assets/vendor/tinymce/VERSION')) : '8.10.1'; ?>
+        <script src="/assets/vendor/tinymce/tinymce.min.js?v=<?= e($tinymceVer) ?>"></script>
         <label class="full">Structured content (JSON, for tables etc.)
             <textarea name="body_json" rows="4"><?= e(is_array($content['body_json'] ?? null) ? json_encode($content['body_json'], JSON_PRETTY_PRINT) : '') ?></textarea>
         </label>

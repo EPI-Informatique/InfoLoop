@@ -70,13 +70,19 @@ final class App
         if ($this->pdo instanceof PDO) {
             return $this->pdo;
         }
-        $db = $this->config('db');
+        $db = $this->config('db', $this->config('app.db', []));
+        if (!is_array($db) || $db === []) {
+            throw new \RuntimeException(
+                'Database configuration is missing: no "db" section was found in the loaded config. ' .
+                'Check that app/config/app.php is readable and returns an array (see app/bootstrap.php).'
+            );
+        }
         $dsn = sprintf(
             'mysql:host=%s;port=%d;dbname=%s;charset=%s',
-            $db['host'],
-            (int) $db['port'],
-            $db['name'],
-            $db['charset']
+            (string) ($db['host'] ?? '127.0.0.1'),
+            (int) ($db['port'] ?? 3306),
+            (string) ($db['name'] ?? 'infoloop'),
+            (string) ($db['charset'] ?? 'utf8mb4')
         );
         $options = [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
@@ -99,16 +105,16 @@ final class App
     public function logger(): Logger
     {
         return $this->logger ??= new Logger(
-            (string) $this->config('log.dir', INFOLOOP_STORAGE . '/logs'),
-            (string) $this->config('log.level', 'info')
+            (string) ($this->config('log.dir') ?? $this->config('app.log.dir', INFOLOOP_STORAGE . '/logs')),
+            (string) ($this->config('log.level') ?? $this->config('app.log.level', 'info'))
         );
     }
 
     public function session(): Session
     {
         return $this->session ??= new Session(
-            (string) $this->config('session.name', 'infoloopsess'),
-            (int) $this->config('session.lifetime', 7200)
+            (string) ($this->config('session.name') ?? $this->config('app.session.name', 'infoloopsess')),
+            (int) ($this->config('session.lifetime') ?? $this->config('app.session.lifetime', 7200))
         );
     }
 
@@ -142,6 +148,9 @@ final class App
      */
     private function instantiate(string $class): object
     {
+        if (!method_exists($class, '__construct')) {
+            return new $class();
+        }
         $ctor = (new \ReflectionMethod($class, '__construct'))->getParameters();
         $args = [];
         foreach ($ctor as $param) {

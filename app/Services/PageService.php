@@ -69,8 +69,12 @@ final class PageService
             return ['ok' => true, 'page_id' => $pageId];
         } catch (\Throwable $e) {
             $this->db()->rollBack();
-            $this->app->logger()->error('Page creation failed', ['error' => $e->getMessage()]);
-            return ['ok' => false, 'error' => 'Could not create the page.'];
+            $this->app->logger()->error('Page creation failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            $debug = (bool) ($this->app->config('app.debug') ?? $this->app->config('debug', false));
+            return ['ok' => false, 'error' => $debug ? 'Could not create the page: ' . $e->getMessage() : 'Could not create the page.'];
         }
     }
 
@@ -130,8 +134,14 @@ final class PageService
             return ['ok' => true, 'revision_id' => $revisionId];
         } catch (\Throwable $e) {
             $this->db()->rollBack();
-            $this->app->logger()->error('Revision save failed', ['page_id' => $pageId, 'error' => $e->getMessage()]);
-            return ['ok' => false, 'error' => 'Could not save the revision.'];
+            $this->app->logger()->error('Revision save failed', [
+                'page_id' => $pageId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            // Surface the real cause in debug mode; keep the generic message otherwise.
+            $debug = (bool) ($this->app->config('app.debug') ?? $this->app->config('debug', false));
+            return ['ok' => false, 'error' => $debug ? 'Could not save the revision: ' . $e->getMessage() : 'Could not save the revision.'];
         }
     }
 

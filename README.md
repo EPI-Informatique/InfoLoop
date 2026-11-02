@@ -73,6 +73,7 @@ Open `/?screen=<token>` on the display device.
 ## CLI reference
 
 ```bash
+php bin/infoloop doctor                           # check prerequisites (PHP ext, tools, perms, DB)
 php bin/infoloop migrate                          # apply pending migrations
 php bin/infoloop seed                             # seed roles/settings/location
 php bin/infoloop install                          # migrate + seed
@@ -102,11 +103,13 @@ InfoLoop/
 │   │   ├── migrations/          # versioned SQL (forward-only)
 │   │   └── seed.sql
 │   └── views/                   # kiosk + admin + errors + install templates
-├── bin/infoloop                 # CLI (migrate, users, ldap sync…)
+├── bin/infoloop                 # CLI (migrate, seed, doctor, users, ldap sync…)
+├── bin/update-tinymce.sh        # upgrade the vendored TinyMCE to the latest release
 ├── docs/nginx.conf              # ready-to-use nginx site
 ├── public/                      # nginx document root (only index.php is PHP)
 │   ├── index.php                # front controller
 │   ├── assets/                  # kiosk.css/js, admin.css/js
+│   │   └── vendor/tinymce/      # pinned TinyMCE (WYSIWYG editor), see VERSION; upgrade via bin/update-tinymce.sh
 │   └── files/                   # uploaded media (sharded ab/cd/<sha256>.ext)
 ├── storage/                     # logs, app.key (gitignored)
 └── tests/                       # unit tests (php tests/run.php)

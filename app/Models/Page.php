@@ -30,7 +30,7 @@ final class Page extends Model
             $params['lid'] = $locationId;
         }
         $sql .= ' ORDER BY p.menu_path ASC, p.menu_order ASC, p.title ASC';
-        return $this->db->all($sql, $params);
+        return $this->db()->all($sql, $params);
     }
 
     /**
@@ -44,6 +44,6 @@ final class Page extends Model
             $sql .= ' AND (location_id = :lid OR location_id IS NULL)';
             $params['lid'] = $locationId;
         }
-        return $this->db->all($sql . ' ORDER BY menu_order ASC, title ASC', $params);
+        return $this->db()->all($sql . ' ORDER BY menu_order ASC, title ASC', $params);
     }
 }

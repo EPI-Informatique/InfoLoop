@@ -68,10 +68,58 @@
         });
     }
 
-    // ---- Paste-to-upload in the editor ----
-    var editor = document.getElementById('body-editor');
-    if (editor) {
-        editor.addEventListener('paste', function (ev) {
+    // ---- TinyMCE WYSIWYG editor (vendored, version pinned in vendor/tinymce/VERSION) ----
+    var TINYMCE_VERSION = '8.10.1'; // keep in sync with public/assets/vendor/tinymce/VERSION
+    var editorEl = document.getElementById('body-editor');
+    if (editorEl && window.tinymce) {
+        tinymce.init({
+            selector: '#body-editor',
+            license_key: 'gpl',
+            base_url: '/assets/vendor/tinymce',
+            suffix: '.min',
+            height: 480,
+            menubar: 'file edit view insert format tools table help',
+            plugins: 'advlist autolink lists link image media table code pagebreak charmap searchreplace wordcount fullscreen preview',
+            toolbar: 'undo redo | blocks | bold italic underline strikethrough | forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image media | table | charmap pagebreak | removeformat code fullscreen preview',
+            images_upload_url: '/admin/pages/upload-inline',
+            automatic_uploads: true,
+            paste_data_images: true,
+            images_upload_handler: function (blobInfo, progress) {
+                return new Promise(function (resolve, reject) {
+                    var fd = new FormData();
+                    fd.append('file', blobInfo.blob(), blobInfo.filename() || 'paste.png');
+                    fd.append('_csrf', csrf());
+                    fetch('/admin/pages/upload-inline', { method: 'POST', body: fd })
+                        .then(function (r) { return r.json(); })
+                        .then(function (data) {
+                            if (data.ok) { resolve(data.url); } else { reject(data.error || 'Upload failed'); }
+                        })
+                        .catch(function () { reject('Upload failed'); });
+                });
+            },
+            file_picker_types: 'image media',
+            file_picker_callback: function (cb) {
+                var input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*,video/mp4';
+                input.onchange = function () {
+                    var fd = new FormData();
+                    fd.append('file', input.files[0]);
+                    fd.append('_csrf', csrf());
+                    fetch('/admin/pages/upload-inline', { method: 'POST', body: fd })
+                        .then(function (r) { return r.json(); })
+                        .then(function (data) {
+                            if (data.ok) { cb(data.url, { title: data.name }); }
+                        });
+                };
+                input.click();
+            },
+            content_style: 'img { max-width: 100%; height: auto; }',
+            branding: false
+        });
+    } else if (editorEl) {
+        // Fallback: plain textarea with paste-to-upload (TinyMCE failed to load)
+        editorEl.addEventListener('paste', function (ev) {
             var items = (ev.clipboardData || window.clipboardData).items;
             for (var i = 0; i < items.length; i++) {
                 if (items[i].type.indexOf('image/') === 0) {
@@ -85,8 +133,8 @@
                         .then(function (data) {
                             if (data.ok) {
                                 var snippet = '\n<img src="' + data.url + '" alt="">';
-                                var start = editor.selectionStart;
-                                editor.setRangeText(snippet, start, editor.selectionEnd, 'end');
+                                var start = editorEl.selectionStart;
+                                editorEl.setRangeText(snippet, start, editorEl.selectionEnd, 'end');
                             }
                         })
                         .catch(function () {});

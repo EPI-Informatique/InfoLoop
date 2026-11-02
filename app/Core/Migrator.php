@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace InfoLoop\Core;
 
+use PDO;
+
 final class Migrator
 {
     private string $migrationsDir;
@@ -68,11 +70,17 @@ final class Migrator
                 }
                 $stmt = $this->app->db()->prepare('INSERT INTO migrations (version) VALUES (:v)');
                 $stmt->execute([':v' => $version]);
-                $this->app->db()->commit();
+                // MySQL/MariaDB DDL causes an implicit commit, so the
+                // transaction may already be gone by the time we get here.
+                if ($this->app->db()->inTransaction()) {
+                    $this->app->db()->commit();
+                }
                 $ran[] = $version;
                 $this->app->logger()->info("Migration applied", ['version' => $version]);
             } catch (\Throwable $e) {
-                $this->app->db()->rollBack();
+                if ($this->app->db()->inTransaction()) {
+                    $this->app->db()->rollBack();
+                }
                 $this->app->logger()->error("Migration failed", ['version' => $version, 'error' => $e->getMessage()]);
                 throw $e;
             }

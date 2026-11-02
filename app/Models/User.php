@@ -27,7 +27,7 @@ final class User extends Model
      */
     public function withRoles(): array
     {
-        return $this->db->all(
+        return $this->db()->all(
             'SELECT u.*, r.name AS role_name, r.label AS role_label, r.is_location_scoped, l.name AS location_name
              FROM users u
              JOIN roles r ON r.id = u.role_id

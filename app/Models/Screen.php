@@ -19,7 +19,7 @@ final class Screen extends Model
      */
     public function forLocation(int $locationId): array
     {
-        return $this->db->all(
+        return $this->db()->all(
             'SELECT s.*, l.name AS location_name, p.title AS default_page_title
              FROM screens s
              LEFT JOIN locations l ON l.id = s.location_id
@@ -34,7 +34,7 @@ final class Screen extends Model
      */
     public function allWithLocations(): array
     {
-        return $this->db->all(
+        return $this->db()->all(
             'SELECT s.*, l.name AS location_name, p.title AS default_page_title, pl.name AS playlist_name
              FROM screens s
              LEFT JOIN locations l ON l.id = s.location_id
