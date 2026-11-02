@@ -30,6 +30,8 @@ use InfoLoop\Core\Database;
 use InfoLoop\Core\Migrator;
 use InfoLoop\Services\AuthService;
 use InfoLoop\Services\LdapService;
+use PDO;
+use Throwable;
 
 $app = new App($config);
 $command = $argv[1] ?? 'help';
@@ -55,6 +57,93 @@ function infoloop_strip_sql_comments(string $sql): string
             && !str_starts_with(trim($l), '--')
             && !str_starts_with(trim($l), '#')
     ));
+}
+
+/**
+ * Checks runtime prerequisites and reports OK / WARN / FAIL per item.
+ *
+ * @return int Process exit code (0 = all OK, 1 = at least one FAIL).
+ */
+function infoloop_doctor(App $app): int
+{
+    $fail = 0;
+    $warn = 0;
+    $check = static function (string $label, bool $ok, string $detail = '', bool $isWarn = false) use (&$fail, &$warn): void {
+        $status = $ok ? 'OK  ' : ($isWarn ? 'WARN' : 'FAIL');
+        if (!$ok && !$isWarn) {
+            $fail++;
+        } elseif (!$ok) {
+            $warn++;
+        }
+        out(sprintf('[%s] %-38s %s', $status, $label, $detail), $ok ? 'info' : ($isWarn ? 'warning' : 'error'));
+    };
+
+    out('== PHP ==');
+    $check('PHP version >= 8.4', version_compare(PHP_VERSION, '8.4.0', '>='), PHP_VERSION);
+    $requiredExt = ['pdo', 'pdo_mysql', 'mbstring', 'intl', 'fileinfo', 'dom', 'openssl', 'sodium', 'session', 'json', 'filter'];
+    $optionalExt = ['ldap' => 'LDAP/AD login', 'gd' => 'image thumbnails'];
+    foreach ($requiredExt as $ext) {
+        $check("ext-{$ext}", extension_loaded($ext));
+    }
+    foreach ($optionalExt as $ext => $why) {
+        $loaded = extension_loaded($ext);
+        $check("ext-{$ext} (optional: {$why})", $loaded, $loaded ? '' : 'not loaded', !$loaded);
+    }
+
+    out('== Linux commands ==');
+    foreach (['stty' => 'used for hidden password prompts'] as $cmd => $why) {
+        $found = trim((string) @shell_exec('command -v ' . escapeshellarg($cmd) . ' 2>/dev/null')) !== '';
+        $check("command: {$cmd}", $found, $why, !$found);
+    }
+
+    out('== Files & permissions ==');
+    $root = dirname(__DIR__);
+    $webUser = function_exists('posix_geteuid') ? (string) (posix_getpwuid(posix_geteuid())['name'] ?? 'unknown') : 'unknown';
+    $paths = [
+        'storage' => 'must be writable by the web/CLI user (logs)',
+        'storage/logs' => 'log directory',
+        'public/files' => 'uploaded media (sharded)',
+        '.env' => 'environment file (if present, must be 0600 and not world-readable)',
+        'app/config' => 'must be readable by the web user',
+        'public' => 'web root (must be readable/executable by nginx/fpm)',
+    ];
+    foreach ($paths as $rel => $why) {
+        $abs = $root . '/' . $rel;
+        if ($rel === '.env' && !is_file($abs)) {
+            $check("{$rel} present", false, 'copy .env.example to .env and fill it in', true);
+            continue;
+        }
+        if (!file_exists($abs)) {
+            $check("{$rel} exists", false, $why, true);
+            continue;
+        }
+        $check("{$rel} readable", is_readable($abs), $why);
+        if (is_dir($abs)) {
+            $check("{$rel} writable", is_writable($abs), "running as {$webUser}");
+        }
+        if ($rel === '.env') {
+            $perms = fileperms($abs) & 0777;
+            $check('.env permissions 0600', $perms === 0600, sprintf('current: %04o', $perms));
+        }
+    }
+
+    out('== Configuration ==');
+    $db = $app->config('db', $app->config('app.db', []));
+    $check('db config present', is_array($db) && $db !== [], is_array($db) ? "host={$db['host']} name={$db['name']} charset={$db['charset']}" : 'missing db section');
+    if (is_array($db) && $db !== []) {
+        try {
+            $pdo = $app->db();
+            $check('DB connection', true, (string) $pdo->getAttribute(PDO::ATTR_SERVER_VERSION));
+            $charset = $pdo->query('SELECT @@character_set_connection')->fetchColumn();
+            $check('connection charset utf8mb4', $charset === 'utf8mb4', "got: {$charset}");
+        } catch (Throwable $e) {
+            $check('DB connection', false, $e->getMessage());
+        }
+    }
+
+    out('== Summary ==');
+    out($fail === 0 ? "All checks passed ({$warn} warning(s))." : "{$fail} check(s) FAILED, {$warn} warning(s).", $fail === 0 ? 'info' : 'error');
+    return $fail === 0 ? 0 : 1;
 }
 
 /**
@@ -191,6 +280,10 @@ try {
             }
             break;
 
+        case 'doctor':
+            exit(infoloop_doctor($app));
+            break;
+
         case 'help':
         default:
             out(<<<'HELP'
@@ -198,6 +291,8 @@ InfoLoop CLI commands:
   migrate                          Apply pending database migrations
   seed                             Apply seed data (roles, default location, settings)
   install                          migrate + seed
+  doctor                           Check prerequisites: PHP version/extensions, tools,
+                                   directory permissions, .env, DB connectivity
   user:create <user> <email> <pw> [role] [location_id]
   user:reset-password <user>       Reset an admin password interactively
   user:list                        List admin users

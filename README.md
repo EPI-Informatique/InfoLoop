@@ -73,6 +73,7 @@ Open `/?screen=<token>` on the display device.
 ## CLI reference
 
 ```bash
+php bin/infoloop doctor                           # check prerequisites (PHP ext, tools, perms, DB)
 php bin/infoloop migrate                          # apply pending migrations
 php bin/infoloop seed                             # seed roles/settings/location
 php bin/infoloop install                          # migrate + seed
