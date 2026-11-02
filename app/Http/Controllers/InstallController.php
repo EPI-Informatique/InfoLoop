@@ -98,9 +98,17 @@ final class InstallController extends Controller
     private function seed(): void
     {
         $sql = (string) file_get_contents(INFOLOOP_APP . '/database/seed.sql');
+        // Strip full-line comments first so the header comment can't swallow
+        // the first INSERT when splitting on ';'.
+        $sql = implode("\n", array_filter(
+            preg_split('/\r?\n/', $sql) ?: [],
+            static fn (string $l): bool => trim($l) !== ''
+                && !str_starts_with(trim($l), '--')
+                && !str_starts_with(trim($l), '#')
+        ));
         foreach (preg_split('/;\s*(\r?\n|$)/', $sql) ?: [] as $statement) {
             $statement = trim($statement);
-            if ($statement !== '' && !str_starts_with($statement, '--')) {
+            if ($statement !== '') {
                 $this->app->db()->exec($statement);
             }
         }

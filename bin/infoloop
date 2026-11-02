@@ -44,6 +44,20 @@ function out(string $message, string $level = 'info'): void
 }
 
 /**
+ * Removes full-line SQL comments ('-- ...' / '# ...') so a header comment
+ * can't swallow the first statement when splitting on ';'.
+ */
+function infoloop_strip_sql_comments(string $sql): string
+{
+    return implode("\n", array_filter(
+        preg_split('/\r?\n/', $sql) ?: [],
+        static fn (string $l): bool => trim($l) !== ''
+            && !str_starts_with(trim($l), '--')
+            && !str_starts_with(trim($l), '#')
+    ));
+}
+
+/**
  * Prompts for a hidden password.
  */
 function readPassword(string $prompt): string
@@ -65,9 +79,10 @@ try {
 
         case 'seed':
             $sql = (string) file_get_contents(dirname(__DIR__) . '/app/database/seed.sql');
+            $sql = infoloop_strip_sql_comments($sql);
             foreach (preg_split('/;\s*(\r?\n|$)/', $sql) ?: [] as $statement) {
                 $statement = trim($statement);
-                if ($statement !== '' && !str_starts_with($statement, '--')) {
+                if ($statement !== '') {
                     $app->db()->exec($statement);
                 }
             }
@@ -77,10 +92,10 @@ try {
         case 'install':
             $ran = (new Migrator($app))->migrate();
             out('Migrations applied: ' . ($ran === [] ? '(none pending)' : implode(', ', $ran)));
-            $seedSql = (string) file_get_contents(dirname(__DIR__) . '/app/database/seed.sql');
+            $seedSql = infoloop_strip_sql_comments((string) file_get_contents(dirname(__DIR__) . '/app/database/seed.sql'));
             foreach (preg_split('/;\s*(\r?\n|$)/', $seedSql) ?: [] as $statement) {
                 $statement = trim($statement);
-                if ($statement !== '' && !str_starts_with($statement, '--')) {
+                if ($statement !== '') {
                     $app->db()->exec($statement);
                 }
             }
