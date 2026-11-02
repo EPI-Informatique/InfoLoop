@@ -35,7 +35,7 @@ abstract class Model
      */
     public function find(int $id): ?array
     {
-        return $this->db->one(
+        return $this->db()->one(
             sprintf('SELECT * FROM %s WHERE %s = :id', $this->table, $this->primaryKey[0]),
             ['id' => $id]
         );
@@ -50,7 +50,7 @@ abstract class Model
         if ($limit > 0) {
             $sql .= sprintf(' LIMIT %d OFFSET %d', $limit, $offset);
         }
-        return $this->db->all($sql);
+        return $this->db()->all($sql);
     }
 
     /**
@@ -58,7 +58,7 @@ abstract class Model
      */
     public function create(array $data): int
     {
-        return $this->db->insert($this->table, $data);
+        return $this->db()->insert($this->table, $data);
     }
 
     /**
@@ -66,12 +66,12 @@ abstract class Model
      */
     public function updateById(int $id, array $data): int
     {
-        return $this->db->update($this->table, $data, $this->primaryKey[0] . ' = :__id', ['__id' => $id]);
+        return $this->db()->update($this->table, $data, $this->primaryKey[0] . ' = :__id', ['__id' => $id]);
     }
 
     public function deleteById(int $id): int
     {
-        return $this->db->delete($this->table, $this->primaryKey[0] . ' = :__id', ['__id' => $id]);
+        return $this->db()->delete($this->table, $this->primaryKey[0] . ' = :__id', ['__id' => $id]);
     }
 
     /**
@@ -81,7 +81,7 @@ abstract class Model
      */
     public function findBy(string $column, mixed $value): ?array
     {
-        return $this->db->one(
+        return $this->db()->one(
             sprintf('SELECT * FROM %s WHERE %s = :value', $this->table, $column),
             ['value' => $value]
         );
@@ -92,7 +92,7 @@ abstract class Model
      */
     public function where(string $column, mixed $value, string $orderBy = 'id', string $direction = 'ASC'): array
     {
-        return $this->db->all(
+        return $this->db()->all(
             sprintf('SELECT * FROM %s WHERE %s = :value ORDER BY %s %s', $this->table, $column, $orderBy, $direction),
             ['value' => $value]
         );
@@ -100,6 +100,6 @@ abstract class Model
 
     public function count(string $where = '1=1', array $params = []): int
     {
-        return (int) $this->db->scalar(sprintf('SELECT COUNT(*) FROM %s WHERE %s', $this->table, $where), $params);
+        return (int) $this->db()->scalar(sprintf('SELECT COUNT(*) FROM %s WHERE %s', $this->table, $where), $params);
     }
 }

@@ -19,7 +19,7 @@ final class Role extends Model
      */
     public function allOrdered(): array
     {
-        return $this->db->all('SELECT * FROM roles ORDER BY is_location_scoped ASC, id ASC');
+        return $this->db()->all('SELECT * FROM roles ORDER BY is_location_scoped ASC, id ASC');
     }
 
     /**

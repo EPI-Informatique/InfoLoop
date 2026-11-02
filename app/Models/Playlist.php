@@ -19,7 +19,7 @@ final class Playlist extends Model
      */
     public function withItems(int $playlistId): array
     {
-        return $this->db->all(
+        return $this->db()->all(
             'SELECT pi.*, p.title, p.slug, p.page_type FROM playlist_items pi
              JOIN pages p ON p.id = pi.page_id
              WHERE pi.playlist_id = :id ORDER BY pi.position ASC',
