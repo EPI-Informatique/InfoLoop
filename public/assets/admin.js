@@ -69,7 +69,7 @@
     }
 
     // ---- TinyMCE WYSIWYG editor (vendored, version pinned in vendor/tinymce/VERSION) ----
-    var TINYMCE_VERSION = '7.9.1'; // keep in sync with public/assets/vendor/tinymce/VERSION
+    var TINYMCE_VERSION = '8.10.1'; // keep in sync with public/assets/vendor/tinymce/VERSION
     var editorEl = document.getElementById('body-editor');
     if (editorEl && window.tinymce) {
         tinymce.init({
@@ -79,8 +79,8 @@
             suffix: '.min',
             height: 480,
             menubar: 'file edit view insert format tools table help',
-            plugins: 'advlist autolink lists link image media table code hr charmap searchreplace wordcount fullscreen preview',
-            toolbar: 'undo redo | blocks | bold italic underline strikethrough | forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image media | table | charmap hr | removeformat code fullscreen preview',
+            plugins: 'advlist autolink lists link image media table code pagebreak charmap searchreplace wordcount fullscreen preview',
+            toolbar: 'undo redo | blocks | bold italic underline strikethrough | forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image media | table | charmap pagebreak | removeformat code fullscreen preview',
             images_upload_url: '/admin/pages/upload-inline',
             automatic_uploads: true,
             paste_data_images: true,

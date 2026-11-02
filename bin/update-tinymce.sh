@@ -19,21 +19,29 @@ if ! command -v curl >/dev/null || ! command -v python3 >/dev/null; then
     exit 1
 fi
 
-echo "==> Fetching tinymce@$WANT from npm"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
-curl -fsSL "https://registry.npmjs.org/tinymce/-/tinymce-${WANT}.tgz" -o "$TMP/tinymce.tgz"
-tar -xzf "$TMP/tinymce.tgz" -C "$TMP"
 
-SRC="$TMP/package"
-for f in tinymce.min.js tinymce.js plugins skins themes icons models license.md notices.txt; do
-    [ -e "$SRC/$f" ] || { echo "error: $f missing in tarball" >&2; exit 1; }
+echo "==> Fetching TinyMCE $WANT (official zip, npm tarball as fallback)"
+if curl -fsSL "https://download.tiny.cloud/tinymce/community/tinymce_${WANT}.zip" -o "$TMP/tinymce.zip"; then
+    python3 -c "import zipfile,sys; zipfile.ZipFile(sys.argv[1]).extractall(sys.argv[2])" "$TMP/tinymce.zip" "$TMP"
+    SRC="$TMP/tinymce/js/tinymce"          # official zip layout
+else
+    echo "    official zip unavailable, falling back to npm tarball"
+    curl -fsSL "https://registry.npmjs.org/tinymce/-/tinymce-${WANT}.tgz" -o "$TMP/tinymce.tgz"
+    tar -xzf "$TMP/tinymce.tgz" -C "$TMP"
+    SRC="$TMP/package"                     # npm layout
+fi
+
+for f in tinymce.min.js plugins skins themes icons license.md notices.txt; do
+    [ -e "$SRC/$f" ] || { echo "error: $f missing in archive (layout: $SRC)" >&2; exit 1; }
 done
 
 echo "==> Replacing $DEST (was: $(cat "$DEST/VERSION" 2>/dev/null || echo none))"
 rm -rf "$DEST"
 mkdir -p "$DEST"
-cp -r "$SRC"/{tinymce.min.js,tinymce.js,plugins,skins,themes,icons,models,license.md,notices.txt} "$DEST/"
+cp -r "$SRC"/tinymce.min.js "$SRC"/tinymce.js "$SRC"/plugins "$SRC"/skins "$SRC"/themes "$SRC"/icons "$SRC"/models "$SRC"/license.md "$SRC"/notices.txt "$DEST/" 2>/dev/null || cp -r "$SRC"/{tinymce.min.js,plugins,skins,themes,icons,license.md,notices.txt} "$DEST/"
+[ -d "$SRC/langs" ] && cp -r "$SRC/langs" "$DEST/"
 printf '%s\n' "$WANT" > "$DEST/VERSION"
 
 echo "==> Updating TINYMCE_VERSION in public/assets/admin.js"
