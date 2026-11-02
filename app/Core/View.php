@@ -45,10 +45,16 @@ final class View
     {
         $this->layout = $layout;
         $this->sections = [];
+        // Templates wrap themselves in a layout by calling
+        // $this->render('layouts/x', ['content' => …]) from inside the
+        // template — merge over the last data set so controller-injected
+        // vars (app, settings, currentUser, flash, csrfToken) survive.
+        if ($this->lastData !== []) {
+            $data = array_merge($this->lastData, $data);
+        }
         if ($data !== []) {
             $this->lastData = $data;
         }
-        $data = $this->lastData;
         $content = $this->renderTemplate($template, $data);
         if ($layout !== null) {
             $data['content'] = $content;
