@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace InfoLoop\Core;
 
+use PDO;
+
 final class Migrator
 {
     private string $migrationsDir;
