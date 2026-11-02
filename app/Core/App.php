@@ -148,6 +148,9 @@ final class App
      */
     private function instantiate(string $class): object
     {
+        if (!method_exists($class, '__construct')) {
+            return new $class();
+        }
         $ctor = (new \ReflectionMethod($class, '__construct'))->getParameters();
         $args = [];
         foreach ($ctor as $param) {
