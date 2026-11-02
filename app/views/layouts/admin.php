@@ -43,7 +43,7 @@ $nav = [
     <nav class="nav">
         <?php foreach ($nav as [$href, $label, $icon]): ?>
             <a href="<?= e($href) ?>" class="nav-link <?= str_starts_with($_SERVER['REQUEST_URI'] ?? '', $href) && $href !== '/admin' || ($href === '/admin' && ($_SERVER['REQUEST_URI'] ?? '') === '/admin') ? 'active' : '' ?>">
-                <span class="nav-icon"><?= e($icon) ?></span><?= e($label) ?>
+                <span class="nav-icon"><svg aria-hidden="true"><use href="/assets/icons.svg#i-<?= e($icon) ?>"></use></svg></span><?= e($label) ?>
             </a>
         <?php endforeach; ?>
     </nav>
