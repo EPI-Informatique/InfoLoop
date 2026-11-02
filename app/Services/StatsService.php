@@ -96,9 +96,10 @@ final class StatsService
         [$where, $params] = $this->locationFilter($locationId);
         $since = date('Y-m-d H:i:s', time() - $days * 86400);
         $rows = $this->db()->all(
-            "SELECT DATE(occurred_at) AS day, COUNT(*) AS views, SUM(event_type='interaction') AS interactions
-             FROM page_views WHERE occurred_at >= :since {$where}
-             GROUP BY DATE(occurred_at) ORDER BY day ASC",
+            "SELECT DATE(pv.occurred_at) AS day, COUNT(*) AS views, SUM(pv.event_type='interaction') AS interactions
+             FROM page_views pv LEFT JOIN pages p ON p.id = pv.page_id
+             WHERE pv.occurred_at >= :since {$where}
+             GROUP BY DATE(pv.occurred_at) ORDER BY day ASC",
             array_merge(['since' => $since], $params)
         );
         $series = [];
@@ -151,8 +152,8 @@ final class StatsService
         $since = date('Y-m-d H:i:s', time() - $days * 86400);
         $params['since'] = $since;
         return [
-            'views' => (int) $this->db()->scalar("SELECT COUNT(*) FROM page_views WHERE occurred_at >= :since {$where}", $params),
-            'interactions' => (int) $this->db()->scalar("SELECT COUNT(*) FROM page_views WHERE occurred_at >= :since AND event_type='interaction' {$where}", $params),
+            'views' => (int) $this->db()->scalar("SELECT COUNT(*) FROM page_views pv LEFT JOIN pages p ON p.id = pv.page_id WHERE pv.occurred_at >= :since {$where}", $params),
+            'interactions' => (int) $this->db()->scalar("SELECT COUNT(*) FROM page_views pv LEFT JOIN pages p ON p.id = pv.page_id WHERE pv.occurred_at >= :since AND pv.event_type='interaction' {$where}", $params),
             'pages' => (int) $this->db()->scalar('SELECT COUNT(*) FROM pages WHERE is_published = 1'),
             'screens' => (int) $this->db()->scalar('SELECT COUNT(*) FROM screens WHERE is_active = 1'),
             'media' => (int) $this->db()->scalar('SELECT COUNT(*) FROM media_files'),
@@ -168,6 +169,8 @@ final class StatsService
         if ($locationId === null) {
             return ['', []];
         }
+        // All page_views queries must alias the table as "pv" (and join
+        // pages as "p" when present) for these predicates to resolve.
         return [' AND (pv.location_id = :lid OR p.location_id = :lid2)', ['lid' => $locationId, 'lid2' => $locationId]];
     }
 }

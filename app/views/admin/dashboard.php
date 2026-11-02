@@ -73,7 +73,7 @@ ob_start();
     </div>
 </div>
 <script>
-    window.IL_CHART = <?= json_encode($series) ?>;
+    window.IL_CHART = <?= json_encode($series, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE) ?: '[]' ?>;
 </script>
 <?php
 $content = ob_get_clean();
