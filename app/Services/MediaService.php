@@ -68,7 +68,7 @@ final class MediaService
      */
     public function store(?array $file, ?string $rawContent = null, ?int $userId = null): array
     {
-        $maxBytes = (int) $this->app->config('upload.max_mb', 200) * 1024 * 1024;
+        $maxBytes = (int) ($this->app->config('upload.max_mb') ?? $this->app->config('app.upload.max_mb', 200)) * 1024 * 1024;
         if ($file !== null) {
             if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
                 return ['ok' => false, 'error' => 'Upload failed (code ' . (int) ($file['error'] ?? -1) . ').'];
@@ -79,7 +79,7 @@ final class MediaService
             }
             $size = (int) ($file['size'] ?? filesize($tmp));
             if ($size > $maxBytes) {
-                return ['ok' => false, 'error' => 'File exceeds the maximum size of ' . $this->app->config('upload.max_mb', 200) . ' MB.'];
+                return ['ok' => false, 'error' => 'File exceeds the maximum size of ' . ($this->app->config('upload.max_mb') ?? $this->app->config('app.upload.max_mb', 200)) . ' MB.'];
             }
             $content = (string) file_get_contents($tmp);
             $originalName = (string) ($file['name'] ?? 'upload.bin');
@@ -228,7 +228,7 @@ final class MediaService
 
     public function publicUrl(array $media): string
     {
-        $base = (string) $this->app->config('files.base_url', '/files');
+        $base = (string) ($this->app->config('files.base_url') ?? $this->app->config('app.files.base_url', '/files'));
         return $base . '/' . $this->shardPath((string) $media['sha256'], $this->extOf((string) $media['stored_name']));
     }
 
@@ -262,7 +262,7 @@ final class MediaService
 
     private function baseDir(): string
     {
-        $dir = (string) $this->app->config('files.base_dir', INFOLOOP_PUBLIC . '/files');
+        $dir = (string) ($this->app->config('files.base_dir') ?? $this->app->config('app.files.base_dir', INFOLOOP_PUBLIC . '/files'));
         if (!is_dir($dir)) {
             mkdir($dir, 0750, true);
         }
